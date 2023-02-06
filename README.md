@@ -26,18 +26,10 @@
 <h2 align="center">Example usage (CLI)</h2>
 
 For Node.js:
-`npx easybuild ./src/index.ts ./dist/index.js node`
+`npx @jsheaven/easybuild ./src/index.ts ./dist/index.js node`
 
 For browsers:
-`npx easybuild ./src/index.ts ./dist/index.js browser`
-
-In a CommonJS (CJS) project:
-
-For Node.js:
-`npx easybuild-cjs ./src/index.ts ./dist/index.js node`
-
-For browsers:
-`npx easybuild-cjs ./src/index.ts ./dist/index.js browser`
+`npx @jsheaven/easybuild ./src/index.ts ./dist/index.js browser`
 
 > You need at least version 18 of [Node.js](https://www.nodejs.org) installed.
 
