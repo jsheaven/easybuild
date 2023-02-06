@@ -7,6 +7,8 @@ import { gzipSize } from 'gzip-size'
 import brotliSizeModule from 'brotli-size'
 import prettyBytes from 'pretty-bytes'
 import fastGlob from 'fast-glob'
+import pkg from 'typescript'
+const { createProgram } = pkg
 
 /** adds spaces from left so that all lines are visually in line vertically */
 const getPadLeft = (str: string, width: number, char = ' ') => char.repeat(width - str.length)
@@ -93,8 +95,28 @@ const getOutfileName = (fileName: string, subType: BuildOptions['format']) => {
   return `${fileNameParsed.dir}${sep}${fileNameParsed.name}.${subType}${fileNameParsed.ext}`
 }
 
+/** generates type declaration files (.d.ts) for the entrypoint file */
+const generateTypeDeclarations = async (entryPointFile: string, outfile: string) => {
+  const outfileParsed = parse(outfile)
+  const program = createProgram([entryPointFile], {
+    declaration: true,
+    emitDeclarationOnly: true,
+    skipLibCheck: true,
+    outDir: outfileParsed.dir,
+  })
+  return new Promise((resolve, reject) => {
+    try {
+      resolve(program.emit())
+    } catch (e) {
+      reject(e)
+    }
+  })
+}
+
 /** calls esbuild with a dynamic configuration per format */
 const genericBuild = async ({ entryPoint, outfile, esBuildOptions }) => {
+  generateTypeDeclarations(entryPoint, outfile)
+
   await Promise.all(
     ['iife', 'esm', 'cjs'].map(async (format: BuildOptions['format']) => {
       await build({
