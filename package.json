@@ -1,5 +1,5 @@
 {
-  "name": "easybuild",
+  "name": "@jsheaven/easybuild",
   "type": "module",
   "version": "0.0.1",
   "publishConfig": {

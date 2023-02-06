@@ -1,4 +1,4 @@
-<h1 align="center">easybuild</h1>
+<h1 align="center">@jsheaven/easybuild</h1>
 
 > Super-fast and simple IIFE, ESM and CJS bundler for JavaScript and TypeScript. Comes with an easy API and CLI. One file in, one file out. Supports node and browser output. Generates `.map` and `.d.ts` files. Minifies and prints the final code size.
 
@@ -45,13 +45,13 @@ For browsers:
 
 <h3 align="center">Setup</h2>
 
-- yarn: `yarn add easybuild`
-- npm: `npm install easybuild`
+- yarn: `yarn add @jsheaven/easybuild`
+- npm: `npm install @jsheaven/easybuild`
 
 <h3 align="center">ESM</h2>
 
 ```ts
-import { buildForNode, buildForBrowser } from 'easybuild'
+import { buildForNode, buildForBrowser } from '@jsheaven/easybuild'
 
 await buildForNode({
   // source file to build
@@ -69,7 +69,7 @@ await buildForNode({
 <h3 align="center">CommonJS</h2>
 
 ```ts
-const { buildForNode, buildForBrowser } = require('easybuild')
+const { buildForNode, buildForBrowser } = require('@jsheaven/easybuild')
 
 // same API like ESM variant
 ```
