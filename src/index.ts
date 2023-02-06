@@ -1,6 +1,6 @@
 import { build, BuildOptions, Loader, Plugin } from 'esbuild'
 import { extname, dirname, sep } from 'path'
-import { readFile, rm } from 'fs/promises'
+import { cp, readFile, rm } from 'fs/promises'
 import { basename, parse } from 'path'
 import { green, red, yellow, white } from 'kleur/colors'
 import { gzipSize } from 'gzip-size'
@@ -9,6 +9,9 @@ import prettyBytes from 'pretty-bytes'
 import fastGlob from 'fast-glob'
 import pkg from 'typescript'
 const { createProgram } = pkg
+
+/** output formats to generate */
+const outputFormats: Array<BuildOptions['format']> = ['iife', 'esm', 'cjs']
 
 /** adds spaces from left so that all lines are visually in line vertically */
 const getPadLeft = (str: string, width: number, char = ' ') => char.repeat(width - str.length)
@@ -96,13 +99,12 @@ const getOutfileName = (fileName: string, subType: BuildOptions['format']) => {
 }
 
 /** generates type declaration files (.d.ts) for the entrypoint file */
-const generateTypeDeclarations = async (entryPointFile: string, outfile: string) => {
-  const outfileParsed = parse(outfile)
+const generateTypeDeclarations = async (entryPointFile: string, outDir: string) => {
   const program = createProgram([entryPointFile], {
     declaration: true,
     emitDeclarationOnly: true,
     skipLibCheck: true,
-    outDir: outfileParsed.dir,
+    outDir,
   })
   return new Promise((resolve, reject) => {
     try {
@@ -115,10 +117,21 @@ const generateTypeDeclarations = async (entryPointFile: string, outfile: string)
 
 /** calls esbuild with a dynamic configuration per format */
 const genericBuild = async ({ entryPoint, outfile, esBuildOptions }) => {
-  generateTypeDeclarations(entryPoint, outfile)
+  const outDir = parse(outfile).dir
+  generateTypeDeclarations(entryPoint, outDir).then(async () => {
+    outputFormats.forEach(async (format) => {
+      // move the .d.ts files initially created (*.d.ts of outfile) to their respective invariant places (*.esm.d.ts, *.iife.d.ts, etc.)
+      const inputFileParsed = parse(outfile)
+      const outFileNameParsed = parse(getOutfileName(outfile, format))
+      const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
+      const declarationInFile = `${inputFileParsed.dir}${sep}${inputFileParsed.name}.d.ts`
+      await cp(declarationInFile, declarationOutFile)
+      await rm(declarationInFile)
+    })
+  })
 
   await Promise.all(
-    ['iife', 'esm', 'cjs'].map(async (format: BuildOptions['format']) => {
+    outputFormats.map(async (format: BuildOptions['format']) => {
       await build({
         ...baseConfig,
         format,
