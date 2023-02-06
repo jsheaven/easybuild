@@ -1,4 +1,4 @@
-<h1 align="center">easybundle</h1>
+<h1 align="center">easybuild</h1>
 
 > Super-fast and simple IIFE, ESM and CJS bundler for JavaScript and TypeScript. Comes with an easy API and CLI. One file in, one file out. Supports node and browser output. Generates `.map` and `.d.ts` files. Minifies and prints the final code size.
 
@@ -26,18 +26,18 @@
 <h2 align="center">Example usage (CLI)</h2>
 
 For Node.js:
-`npx easybundle ./src/index.ts ./dist/index.js node`
+`npx easybuild ./src/index.ts ./dist/index.js node`
 
 For browsers:
-`npx easybundle ./src/index.ts ./dist/index.js browser`
+`npx easybuild ./src/index.ts ./dist/index.js browser`
 
 In a CommonJS (CJS) project:
 
 For Node.js:
-`npx easybundle-cjs ./src/index.ts ./dist/index.js node`
+`npx easybuild-cjs ./src/index.ts ./dist/index.js node`
 
 For browsers:
-`npx easybundle-cjs ./src/index.ts ./dist/index.js browser`
+`npx easybuild-cjs ./src/index.ts ./dist/index.js browser`
 
 > You need at least version 18 of [Node.js](https://www.nodejs.org) installed.
 
@@ -45,15 +45,15 @@ For browsers:
 
 <h3 align="center">Setup</h2>
 
-- yarn: `yarn add easybundle`
-- npm: `npm install easybundle`
+- yarn: `yarn add easybuild`
+- npm: `npm install easybuild`
 
 <h3 align="center">ESM</h2>
 
 ```ts
-import { bundleForNode, bundleForBrowser } from 'easybundle'
+import { buildForNode, buildForBrowser } from 'easybuild'
 
-await bundleForNode({
+await buildForNode({
   // source file to build
   entryPoint: './src/cli.ts',
   // file to generate (actually, generates invariants like ./dist/cli.iife.js, etc.)
@@ -69,7 +69,7 @@ await bundleForNode({
 <h3 align="center">CommonJS</h2>
 
 ```ts
-const { bundleForNode, bundleForBrowser } = require('easybundle')
+const { buildForNode, buildForBrowser } = require('easybuild')
 
 // same API like ESM variant
 ```

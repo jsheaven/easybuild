@@ -94,7 +94,7 @@ const getOutfileName = (fileName: string, subType: BuildOptions['format']) => {
 }
 
 /** calls esbuild with a dynamic configuration per format */
-const bundle = async ({ entryPoint, outfile, esBuildOptions }) => {
+const genericBuild = async ({ entryPoint, outfile, esBuildOptions }) => {
   await Promise.all(
     ['iife', 'esm', 'cjs'].map(async (format: BuildOptions['format']) => {
       await build({
@@ -124,8 +124,8 @@ export interface BundleConfig {
 }
 
 /** configures esbuild to build one file for a browser environment */
-export const bundleForBrowser = async ({ entryPoint, outfile, esBuildOptions }: BundleConfig) =>
-  bundle({
+export const buildForBrowser = async ({ entryPoint, outfile, esBuildOptions }: BundleConfig) =>
+  genericBuild({
     entryPoint,
     outfile,
     esBuildOptions: {
@@ -136,8 +136,8 @@ export const bundleForBrowser = async ({ entryPoint, outfile, esBuildOptions }: 
   })
 
 /** configures esbuild to build one file for a Node.js environment */
-export const bundleForNode = async ({ entryPoint, outfile, esBuildOptions }: BundleConfig) =>
-  bundle({
+export const buildForNode = async ({ entryPoint, outfile, esBuildOptions }: BundleConfig) =>
+  genericBuild({
     entryPoint,
     outfile,
     esBuildOptions: {

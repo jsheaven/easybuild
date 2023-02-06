@@ -8,7 +8,7 @@ await build({
 const easybundle = await import('./dist/index.js')
 
 // build the CLI
-easybundle.bundleForNode({
+easybundle.buildForNode({
   entryPoint: './src/cli.ts',
   outfile: './dist/cli.js',
   esBuildOptions: {
@@ -17,7 +17,7 @@ easybundle.bundleForNode({
 })
 
 // built the API
-easybundle.bundleForNode({
+easybundle.buildForNode({
   entryPoint: './src/index.ts',
   outfile: './dist/index.js',
 })

@@ -1,16 +1,16 @@
 {
-  "name": "easybundle",
+  "name": "easybuild",
   "type": "module",
   "version": "0.0.1",
   "publishConfig": {
     "access": "public"
   },
   "bin": {
-    "easybundle": "./dist/cli.esm.js",
-    "easybundle-cjs": "./dist/cli.iife.js"
+    "easybuild": "./dist/cli.esm.js",
+    "easybuild-cjs": "./dist/cli.iife.js"
   },
   "license": "MIT",
-  "description": "Super-fast and simple IIFE, ESM and CJS bundler for JavaScript and TypeScript. Comes with an easy API and CLI. One file in, one file out. Supports node and browser output. Generates .map and .d.ts files. Minifies and prints the final code size.",
+  "description": "Super-fast and simple IIFE, ESM and CJS build tool for JavaScript and TypeScript. Comes with an easy API and CLI. One file in, one file out. Supports node and browser output. Generates .map and .d.ts files. Minifies and prints the final code size.",
   "keywords": [
     "bundler",
     "API",
