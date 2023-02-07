@@ -71,7 +71,7 @@ const esmDirnamePlugin: Plugin = {
 }
 
 const baseConfig: BuildOptions = {
-  sourcemap: 'external',
+  sourcemap: 'linked',
   target: 'esnext',
   bundle: true,
   minify: true,
