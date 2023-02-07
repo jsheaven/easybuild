@@ -50,6 +50,8 @@ await buildForNode({
   entryPoint: './src/cli.ts',
   // file to generate (actually, generates invariants like ./dist/cli.iife.js, etc.)
   outfile: './dist/cli.js',
+  // allows to disable all minification and tree shaking with one flag
+  debug: false,
   // in case you want to set any extra esbuild options
   esBuildOptions: {
     // usually, Node.js builds are not bundled, but e.g. for CLIs you want that

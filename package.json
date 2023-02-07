@@ -1,7 +1,7 @@
 {
   "name": "@jsheaven/easybuild",
   "type": "module",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "publishConfig": {
     "access": "public"
   },
@@ -21,7 +21,7 @@
     "type": "git"
   },
   "scripts": {
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --verbose --coverage ./test/*.test.ts",
+    "test": "NODE_OPTIONS='--experimental-vm-modules --enable-source-maps --no-warnings' jest --verbose --coverage ./test/*.test.ts",
     "clean": "rm -rf ./dist",
     "prebuild": "yarn clean",
     "build": "tsc && ts-node --esm ./bundle.ts"

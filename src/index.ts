@@ -11,13 +11,13 @@ import pkg from 'typescript'
 const { createProgram } = pkg
 
 /** output formats to generate */
-const outputFormats: Array<BuildOptions['format']> = ['iife', 'esm', 'cjs']
+export const outputFormats: Array<BuildOptions['format']> = ['iife', 'esm', 'cjs']
 
 /** adds spaces from left so that all lines are visually in line vertically */
-const getPadLeft = (str: string, width: number, char = ' ') => char.repeat(width - str.length)
+export const getPadLeft = (str: string, width: number, char = ' ') => char.repeat(width - str.length)
 
 /** formats the byte/kByte sizes with coloring */
-const formatSize = (size: number, filename: string, type?: string, raw?: boolean) => {
+export const formatSize = (size: number, filename: string, type?: string, raw?: boolean) => {
   const pretty = raw ? `${size} B` : prettyBytes(size)
   const color = size < 5000 ? green : size > 40000 ? red : yellow
   const indent = getPadLeft(pretty, 13)
@@ -25,7 +25,7 @@ const formatSize = (size: number, filename: string, type?: string, raw?: boolean
 }
 
 /** returns the text of all file sizes per compression */
-const getSizeInfo = async (code: string, filename: string, raw: boolean) => {
+export const getSizeInfo = async (code: string, filename: string, raw: boolean) => {
   raw = raw || code.length < 5000
 
   const [gzip, brotli] = await Promise.all([
@@ -42,7 +42,7 @@ const getSizeInfo = async (code: string, filename: string, raw: boolean) => {
 }
 
 /** adds all node_module imports to external so that --bundle in esbuild is not bundling them in */
-const makeAllPackagesExternalPlugin: Plugin = {
+export const makeAllPackagesExternalPlugin: Plugin = {
   name: 'make-all-packages-external',
   setup(build) {
     let filter = /^[^.\/]|^\.[^.\/]|^\.\.[^\/]/ // Must not start with "/" or "./" or "../"
@@ -51,7 +51,7 @@ const makeAllPackagesExternalPlugin: Plugin = {
 }
 
 /** makes sure that all __dirname and __filename occurances are replaced why the actual filenames */
-const esmDirnamePlugin: Plugin = {
+export const esmDirnamePlugin: Plugin = {
   name: 'esmDirname',
   setup(build) {
     const nodeModules = new RegExp(/^(?:.*[\\\/])?node_modules(?:[\\\/].*)?$/)
@@ -70,7 +70,7 @@ const esmDirnamePlugin: Plugin = {
   },
 }
 
-const baseConfig: BuildOptions = {
+export const baseConfig: BuildOptions = {
   sourcemap: 'linked',
   target: 'esnext',
   bundle: true,
@@ -93,13 +93,13 @@ const printFileSizes = async (outfile: string) => {
 }
 
 /** rewrites the outfile name from e.g. ./dist/index.js to ./dist/index.esm.js, ./dist/index.iife.js */
-const getOutfileName = (fileName: string, subType: BuildOptions['format']) => {
+export const getOutfileName = (fileName: string, subType: BuildOptions['format']) => {
   const fileNameParsed = parse(fileName)
   return `${fileNameParsed.dir}${sep}${fileNameParsed.name}.${subType}${fileNameParsed.ext}`
 }
 
 /** generates type declaration files (.d.ts) for the entrypoint file */
-const generateTypeDeclarations = async (entryPointFile: string, outDir: string) => {
+export const generateTypeDeclarations = async (entryPointFile: string, outDir: string) => {
   const program = createProgram([entryPointFile], {
     declaration: true,
     emitDeclarationOnly: true,
@@ -116,7 +116,19 @@ const generateTypeDeclarations = async (entryPointFile: string, outDir: string) 
 }
 
 /** calls esbuild with a dynamic configuration per format */
-const genericBuild = async ({ entryPoint, outfile, esBuildOptions }) => {
+export const genericBuild = async ({ entryPoint, outfile, esBuildOptions, debug }) => {
+  if (debug) {
+    // override minification parameters
+    // but let the user still influence them
+    esBuildOptions = {
+      minify: false,
+      minifySyntax: false,
+      minifyIdentifiers: false,
+      minifyWhitespace: false,
+      ...esBuildOptions,
+    } as BuildOptions
+  }
+
   const outDir = parse(outfile).dir
   generateTypeDeclarations(entryPoint, outDir).then(async () => {
     outputFormats.forEach(async (format) => {
@@ -148,6 +160,9 @@ export interface BundleConfig {
   /** a folder to remove with all contents before the build starts. e.g. ./dist */
   cleanDir?: string
 
+  /** shall the output not be minified and treeShaked but left readable?  default: false */
+  debug?: boolean
+
   /** a file to start bundling for. e.g. ./src/index.ts */
   entryPoint: string
 
@@ -159,10 +174,11 @@ export interface BundleConfig {
 }
 
 /** configures esbuild to build one file for a browser environment */
-export const buildForBrowser = async ({ entryPoint, outfile, esBuildOptions }: BundleConfig) =>
+export const buildForBrowser = async ({ entryPoint, outfile, esBuildOptions, debug }: BundleConfig) =>
   genericBuild({
     entryPoint,
     outfile,
+    debug,
     esBuildOptions: {
       platform: 'browser',
       plugins: [esmDirnamePlugin],
@@ -171,10 +187,11 @@ export const buildForBrowser = async ({ entryPoint, outfile, esBuildOptions }: B
   })
 
 /** configures esbuild to build one file for a Node.js environment */
-export const buildForNode = async ({ entryPoint, outfile, esBuildOptions }: BundleConfig) =>
+export const buildForNode = async ({ entryPoint, outfile, esBuildOptions, debug }: BundleConfig) =>
   genericBuild({
     entryPoint,
     outfile,
+    debug,
     esBuildOptions: {
       platform: 'node',
       plugins: [esmDirnamePlugin, makeAllPackagesExternalPlugin],
