@@ -1,4 +1,4 @@
-import * as kleur from 'kleur'
+import * as colors from 'kleur/colors'
 import { build, BuildOptions, Loader, Plugin } from 'esbuild'
 import { extname, dirname, sep } from 'path'
 import { cp, readFile, rm } from 'fs/promises'
@@ -117,7 +117,7 @@ export const generateTypeDeclarations = async (entryPointFile: string, outDir: s
 }
 
 /** calls esbuild with a dynamic configuration per format */
-export const genericBuild = async ({ entryPoint, outfile, esBuildOptions, debug }) => {
+export const genericBuild = async ({ entryPoint, outfile, esBuildOptions, debug, typeDeclarations }: BundleConfig) => {
   if (debug) {
     // override minification parameters
     // but let the user still influence them
@@ -131,33 +131,36 @@ export const genericBuild = async ({ entryPoint, outfile, esBuildOptions, debug 
   }
 
   const outDir = parse(outfile).dir
-  const emitResult: EmitResult = (await generateTypeDeclarations(entryPoint, outDir)) as EmitResult
 
-  // type declaration generation failed
-  if (emitResult.emitSkipped) {
-    const formattedDiagnostics = formatDiagnostics(emitResult.diagnostics, {
-      getCurrentDirectory: () => sys.getCurrentDirectory(),
-      getCanonicalFileName: (f) => f,
-      getNewLine: () => '\n',
-    })
-    console.error(kleur.red(formattedDiagnostics))
-    process.exit(1)
+  if (typeDeclarations) {
+    const emitResult: EmitResult = (await generateTypeDeclarations(entryPoint, outDir)) as EmitResult
+
+    // type declaration generation failed
+    if (emitResult.emitSkipped) {
+      const formattedDiagnostics = formatDiagnostics(emitResult.diagnostics, {
+        getCurrentDirectory: () => sys.getCurrentDirectory(),
+        getCanonicalFileName: (f) => f,
+        getNewLine: () => '\n',
+      })
+      console.error(colors.red(formattedDiagnostics))
+      process.exit(1)
+    }
+
+    const declarationFilesToRemove = []
+    for (let i = 0; i < outputFormats.length; i++) {
+      const format = outputFormats[i]
+
+      // move the .d.ts files initially created (*.d.ts of outfile) to their respective invariant places (*.esm.d.ts, *.iife.d.ts, etc.)
+      const inputFileParsed = parse(outfile)
+      const outFileNameParsed = parse(getOutfileName(outfile, format))
+      const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
+      const declarationInFile = `${inputFileParsed.dir}${sep}${inputFileParsed.name}.d.ts`
+      await cp(declarationInFile, declarationOutFile)
+      declarationFilesToRemove.push(declarationInFile)
+    }
+
+    declarationFilesToRemove.forEach(async (file) => await rm(file))
   }
-
-  const declarationFilesToRemove = []
-  for (let i = 0; i < outputFormats.length; i++) {
-    const format = outputFormats[i]
-
-    // move the .d.ts files initially created (*.d.ts of outfile) to their respective invariant places (*.esm.d.ts, *.iife.d.ts, etc.)
-    const inputFileParsed = parse(outfile)
-    const outFileNameParsed = parse(getOutfileName(outfile, format))
-    const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
-    const declarationInFile = `${inputFileParsed.dir}${sep}${inputFileParsed.name}.d.ts`
-    await cp(declarationInFile, declarationOutFile)
-    declarationFilesToRemove.push(declarationInFile)
-  }
-
-  declarationFilesToRemove.forEach(async (file) => await rm(file))
 
   await Promise.all(
     outputFormats.map(async (format: BuildOptions['format']) => {
@@ -186,32 +189,37 @@ export interface BundleConfig {
   /** a file to write to. e.g. ./dist/index.js */
   outfile: string
 
+  /** shall the output include .d.ts type declarations? (takes much longer to compile); default: true */
+  typeDeclarations?: boolean
+
   /** esbuild BuildConfig to override internal configuration */
   esBuildOptions?: BuildOptions
 }
 
+export const defaultBundleConfig: Partial<BundleConfig> = {
+  typeDeclarations: true,
+}
+
 /** configures esbuild to build one file for a browser environment */
-export const buildForBrowser = async ({ entryPoint, outfile, esBuildOptions, debug }: BundleConfig) =>
+export const buildForBrowser = async (config: BundleConfig) =>
   genericBuild({
-    entryPoint,
-    outfile,
-    debug,
+    ...defaultBundleConfig,
+    ...config,
     esBuildOptions: {
       platform: 'browser',
       plugins: [esmDirnamePlugin],
-      ...(esBuildOptions || {}),
+      ...(config.esBuildOptions || {}),
     },
   })
 
 /** configures esbuild to build one file for a Node.js environment */
-export const buildForNode = async ({ entryPoint, outfile, esBuildOptions, debug }: BundleConfig) =>
+export const buildForNode = async (config: BundleConfig) =>
   genericBuild({
-    entryPoint,
-    outfile,
-    debug,
+    ...defaultBundleConfig,
+    ...config,
     esBuildOptions: {
       platform: 'node',
       plugins: [esmDirnamePlugin, makeAllPackagesExternalPlugin],
-      ...(esBuildOptions || {}),
+      ...(config.esBuildOptions || {}),
     },
   })

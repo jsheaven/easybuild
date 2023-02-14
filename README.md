@@ -15,8 +15,9 @@
 
 - ✅ Configures `esbuild` to simply generate one output (per module type) JavaScript for one input TypeScript/JavaScript
 - ✅ Generates `cjs`, `esm` and `iife` invariants automatically
+- ✅ Full support for `.d.ts` files and type checking
 - ✅ Prints the file sizes per compression type `gzip` and `brotli`, when done
-- ✅ Just `1077b` nano sized (ESM, gizpped)
+- ✅ Just `1599b` nano sized (ESM, gizpped)
 - ✅ Available as CLI and API
 - ✅ Fixes several unintuitive `esbuild` default behaviours
 - ✅ Runs on Windows, Mac, Linux, CI tested
@@ -52,6 +53,8 @@ await buildForNode({
   outfile: './dist/cli.js',
   // allows to disable all minification and tree shaking with one flag
   debug: false,
+  // generated .d.ts files, but drives the build-time and may cause typing errors
+  typeDeclarations: true,
   // in case you want to set any extra esbuild options
   esBuildOptions: {
     // usually, Node.js builds are not bundled, but e.g. for CLIs you want that
