@@ -1,3 +1,4 @@
+import * as kleur from 'kleur'
 import { build, BuildOptions, Loader, Plugin } from 'esbuild'
 import { extname, dirname, sep } from 'path'
 import { cp, readFile, rm } from 'fs/promises'
@@ -7,8 +8,8 @@ import { gzipSize } from 'gzip-size'
 import brotliSizeModule from 'brotli-size'
 import prettyBytes from 'pretty-bytes'
 import fastGlob from 'fast-glob'
-import pkg from 'typescript'
-const { createProgram } = pkg
+import pkg, { type EmitResult } from 'typescript'
+const { createProgram, formatDiagnostics, sys } = pkg
 
 /** output formats to generate */
 export const outputFormats: Array<BuildOptions['format']> = ['iife', 'esm', 'cjs']
@@ -130,7 +131,18 @@ export const genericBuild = async ({ entryPoint, outfile, esBuildOptions, debug 
   }
 
   const outDir = parse(outfile).dir
-  await generateTypeDeclarations(entryPoint, outDir)
+  const emitResult: EmitResult = (await generateTypeDeclarations(entryPoint, outDir)) as EmitResult
+
+  // type declaration generation failed
+  if (emitResult.emitSkipped) {
+    const formattedDiagnostics = formatDiagnostics(emitResult.diagnostics, {
+      getCurrentDirectory: () => sys.getCurrentDirectory(),
+      getCanonicalFileName: (f) => f,
+      getNewLine: () => '\n',
+    })
+    console.error(kleur.red(formattedDiagnostics))
+    process.exit(1)
+  }
 
   const declarationFilesToRemove = []
   for (let i = 0; i < outputFormats.length; i++) {
