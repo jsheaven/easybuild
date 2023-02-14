@@ -130,17 +130,22 @@ export const genericBuild = async ({ entryPoint, outfile, esBuildOptions, debug 
   }
 
   const outDir = parse(outfile).dir
-  generateTypeDeclarations(entryPoint, outDir).then(async () => {
-    outputFormats.forEach(async (format) => {
-      // move the .d.ts files initially created (*.d.ts of outfile) to their respective invariant places (*.esm.d.ts, *.iife.d.ts, etc.)
-      const inputFileParsed = parse(outfile)
-      const outFileNameParsed = parse(getOutfileName(outfile, format))
-      const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
-      const declarationInFile = `${inputFileParsed.dir}${sep}${inputFileParsed.name}.d.ts`
-      await cp(declarationInFile, declarationOutFile)
-      await rm(declarationInFile)
-    })
-  })
+  await generateTypeDeclarations(entryPoint, outDir)
+
+  const declarationFilesToRemove = []
+  for (let i = 0; i < outputFormats.length; i++) {
+    const format = outputFormats[i]
+
+    // move the .d.ts files initially created (*.d.ts of outfile) to their respective invariant places (*.esm.d.ts, *.iife.d.ts, etc.)
+    const inputFileParsed = parse(outfile)
+    const outFileNameParsed = parse(getOutfileName(outfile, format))
+    const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
+    const declarationInFile = `${inputFileParsed.dir}${sep}${inputFileParsed.name}.d.ts`
+    await cp(declarationInFile, declarationOutFile)
+    declarationFilesToRemove.push(declarationInFile)
+  }
+
+  declarationFilesToRemove.forEach(async (file) => await rm(file))
 
   await Promise.all(
     outputFormats.map(async (format: BuildOptions['format']) => {
