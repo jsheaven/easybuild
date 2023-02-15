@@ -160,17 +160,6 @@ export const genericBuild = async ({
     } as BuildOptions
   }
 
-  if (typeDeclarations) {
-    const dTs = generateTypeDeclarations(entryPoint, tsConfigPath)
-
-    for (let i = 0; i < outputFormats.length; i++) {
-      const format = outputFormats[i]
-      const outFileNameParsed = parse(getOutfileName(outfile, format))
-      const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
-      writeFileSync(declarationOutFile, dTs, { encoding: 'utf-8' })
-    }
-  }
-
   await Promise.all(
     outputFormats.map(async (format: BuildOptions['format']) => {
       await build({
@@ -182,6 +171,17 @@ export const genericBuild = async ({
       } as BuildOptions)
     }),
   )
+
+  if (typeDeclarations) {
+    const dTs = generateTypeDeclarations(entryPoint, tsConfigPath)
+
+    for (let i = 0; i < outputFormats.length; i++) {
+      const format = outputFormats[i]
+      const outFileNameParsed = parse(getOutfileName(outfile, format))
+      const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
+      writeFileSync(declarationOutFile, dTs, { encoding: 'utf-8' })
+    }
+  }
   printFileSizes(outfile)
 }
 
