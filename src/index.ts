@@ -1,15 +1,16 @@
 import * as colors from 'kleur/colors'
 import { build, BuildOptions, Loader, Plugin } from 'esbuild'
 import { extname, dirname, sep } from 'path'
-import { cp, readFile, rm } from 'fs/promises'
+import { readFile } from 'fs/promises'
 import { basename, parse } from 'path'
 import { green, red, yellow, white } from 'kleur/colors'
 import { gzipSize } from 'gzip-size'
 import brotliSizeModule from 'brotli-size'
 import prettyBytes from 'pretty-bytes'
 import fastGlob from 'fast-glob'
-import pkg, { type EmitResult } from 'typescript'
-const { createProgram, formatDiagnostics, sys } = pkg
+import pkg from 'typescript'
+import { writeFileSync } from 'fs'
+const { createProgram, formatDiagnostics, sys, readConfigFile, parseJsonConfigFileContent } = pkg
 
 /** output formats to generate */
 export const outputFormats: Array<BuildOptions['format']> = ['iife', 'esm', 'cjs']
@@ -71,6 +72,7 @@ export const esmDirnamePlugin: Plugin = {
   },
 }
 
+/** default baseConfig for esbuild */
 export const baseConfig: BuildOptions = {
   sourcemap: 'linked',
   target: 'esnext',
@@ -99,22 +101,42 @@ export const getOutfileName = (fileName: string, subType: BuildOptions['format']
   return `${fileNameParsed.dir}${sep}${fileNameParsed.name}.${subType}${fileNameParsed.ext}`
 }
 
-/** generates type declaration files (.d.ts) for the entrypoint file */
-export const generateTypeDeclarations = async (entryPointFile: string, outDir: string, tsConfigPath: string) => {
+/** generates TypeScript declarations */
+export const generateTypeDeclarations = (entryPointFile: string, tsConfigPath: string) => {
+  const configFile = readConfigFile(tsConfigPath, sys.readFile)
+  const compilerOptions = parseJsonConfigFileContent(configFile.config, sys, dirname(tsConfigPath)).options
+
   const program = createProgram([entryPointFile], {
+    ...compilerOptions,
     declaration: true,
     emitDeclarationOnly: true,
     skipLibCheck: true,
-    outDir,
-    project: tsConfigPath,
   })
-  return new Promise((resolve, reject) => {
-    try {
-      resolve(program.emit())
-    } catch (e) {
-      reject(e)
-    }
+
+  const declarations = []
+
+  // Emit the d.ts file
+  const emitResult = program.emit(undefined, (fileName, data) => {
+    data = data
+      .split('\n')
+      // filter shebang #!/...
+      .filter((line) => !line.startsWith('#'))
+      .join('\n')
+    // collect
+    declarations.push(`// ${fileName}\n\n${data}`)
   })
+
+  // type declaration generation failed
+  if (emitResult.emitSkipped) {
+    const formattedDiagnostics = formatDiagnostics(emitResult.diagnostics, {
+      getCurrentDirectory: () => sys.getCurrentDirectory(),
+      getCanonicalFileName: (f) => f,
+      getNewLine: () => '\n',
+    })
+    console.error(colors.red(formattedDiagnostics))
+    process.exit(1)
+  }
+  return declarations.join('\n\n')
 }
 
 /** calls esbuild with a dynamic configuration per format */
@@ -138,36 +160,15 @@ export const genericBuild = async ({
     } as BuildOptions
   }
 
-  const outDir = parse(outfile).dir
-
   if (typeDeclarations) {
-    const emitResult: EmitResult = (await generateTypeDeclarations(entryPoint, outDir, tsConfigPath)) as EmitResult
+    const dTs = generateTypeDeclarations(entryPoint, tsConfigPath)
 
-    // type declaration generation failed
-    if (emitResult.emitSkipped) {
-      const formattedDiagnostics = formatDiagnostics(emitResult.diagnostics, {
-        getCurrentDirectory: () => sys.getCurrentDirectory(),
-        getCanonicalFileName: (f) => f,
-        getNewLine: () => '\n',
-      })
-      console.error(colors.red(formattedDiagnostics))
-      process.exit(1)
-    }
-
-    const declarationFilesToRemove = []
     for (let i = 0; i < outputFormats.length; i++) {
       const format = outputFormats[i]
-
-      // move the .d.ts files initially created (*.d.ts of outfile) to their respective invariant places (*.esm.d.ts, *.iife.d.ts, etc.)
-      const inputFileParsed = parse(outfile)
       const outFileNameParsed = parse(getOutfileName(outfile, format))
       const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
-      const declarationInFile = `${inputFileParsed.dir}${sep}${inputFileParsed.name}.d.ts`
-      await cp(declarationInFile, declarationOutFile)
-      declarationFilesToRemove.push(declarationInFile)
+      writeFileSync(declarationOutFile, dTs, { encoding: 'utf-8' })
     }
-
-    declarationFilesToRemove.forEach(async (file) => await rm(file))
   }
 
   await Promise.all(

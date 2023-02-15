@@ -1,14 +1,4 @@
 import { jest } from '@jest/globals'
-import { build, BuildOptions, Loader, Plugin } from 'esbuild'
-import { extname, dirname, sep, resolve } from 'path'
-import { cp, readFile, rm } from 'fs/promises'
-import { basename, parse } from 'path'
-import { green, red, yellow, white } from 'kleur/colors'
-import { gzipSize } from 'gzip-size'
-import brotliSizeModule from 'brotli-size'
-import prettyBytes from 'pretty-bytes'
-import fastGlob from 'fast-glob'
-import pkg, { EmitResult } from 'typescript'
 import {
   makeAllPackagesExternalPlugin,
   esmDirnamePlugin,
@@ -143,16 +133,8 @@ describe('baseConfig', () => {
 describe('generateTypeDeclarations', () => {
   test('should generate type declarations for entrypoint file', async () => {
     const entryPointFile = './src/index.ts'
-    const outDir = './dist'
-    const result: EmitResult = (await generateTypeDeclarations(
-      entryPointFile,
-      outDir,
-      'tsconfig.json',
-    )) as unknown as EmitResult
-
-    console.log('result', result)
-
-    expect(result.emitSkipped).toEqual(false)
+    const dTs: string = generateTypeDeclarations(entryPointFile, 'tsconfig.json')
+    expect(dTs).toContain("import { BuildOptions, Plugin } from 'esbuild';")
   })
 })
 
