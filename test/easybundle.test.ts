@@ -144,7 +144,11 @@ describe('generateTypeDeclarations', () => {
   test('should generate type declarations for entrypoint file', async () => {
     const entryPointFile = './src/index.ts'
     const outDir = './dist'
-    const result: EmitResult = (await generateTypeDeclarations(entryPointFile, outDir)) as unknown as EmitResult
+    const result: EmitResult = (await generateTypeDeclarations(
+      entryPointFile,
+      outDir,
+      'tsconfig.json',
+    )) as unknown as EmitResult
 
     console.log('result', result)
 

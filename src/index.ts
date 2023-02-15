@@ -100,12 +100,13 @@ export const getOutfileName = (fileName: string, subType: BuildOptions['format']
 }
 
 /** generates type declaration files (.d.ts) for the entrypoint file */
-export const generateTypeDeclarations = async (entryPointFile: string, outDir: string) => {
+export const generateTypeDeclarations = async (entryPointFile: string, outDir: string, tsConfigPath: string) => {
   const program = createProgram([entryPointFile], {
     declaration: true,
     emitDeclarationOnly: true,
     skipLibCheck: true,
     outDir,
+    project: tsConfigPath,
   })
   return new Promise((resolve, reject) => {
     try {
@@ -117,7 +118,14 @@ export const generateTypeDeclarations = async (entryPointFile: string, outDir: s
 }
 
 /** calls esbuild with a dynamic configuration per format */
-export const genericBuild = async ({ entryPoint, outfile, esBuildOptions, debug, typeDeclarations }: BundleConfig) => {
+export const genericBuild = async ({
+  entryPoint,
+  outfile,
+  esBuildOptions,
+  debug,
+  typeDeclarations,
+  tsConfigPath,
+}: BundleConfig) => {
   if (debug) {
     // override minification parameters
     // but let the user still influence them
@@ -133,7 +141,7 @@ export const genericBuild = async ({ entryPoint, outfile, esBuildOptions, debug,
   const outDir = parse(outfile).dir
 
   if (typeDeclarations) {
-    const emitResult: EmitResult = (await generateTypeDeclarations(entryPoint, outDir)) as EmitResult
+    const emitResult: EmitResult = (await generateTypeDeclarations(entryPoint, outDir, tsConfigPath)) as EmitResult
 
     // type declaration generation failed
     if (emitResult.emitSkipped) {
@@ -192,12 +200,16 @@ export interface BundleConfig {
   /** shall the output include .d.ts type declarations? (takes much longer to compile); default: true */
   typeDeclarations?: boolean
 
+  /** path to a tsconfig.json file, if existing; default: 'tsconfig.json' */
+  tsConfigPath?: string
+
   /** esbuild BuildConfig to override internal configuration */
   esBuildOptions?: BuildOptions
 }
 
 export const defaultBundleConfig: Partial<BundleConfig> = {
   typeDeclarations: true,
+  tsConfigPath: 'tsconfig.json',
 }
 
 /** configures esbuild to build one file for a browser environment */
