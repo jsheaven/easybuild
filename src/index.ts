@@ -208,31 +208,42 @@ export interface BundleConfig {
   esBuildOptions?: BuildOptions
 }
 
-export const defaultBundleConfig: Partial<BundleConfig> = {
+export const defaultBundleConfigBrowser: Partial<BundleConfig> = {
   typeDeclarations: true,
   tsConfigPath: 'tsconfig.json',
-}
-
-/** configures esbuild to build one file for a browser environment */
-export const buildForBrowser = async (config: BundleConfig) =>
-  genericBuild({
-    ...defaultBundleConfig,
-    ...config,
-    esBuildOptions: {
+  esBuildOptions: {
       platform: 'browser',
       plugins: [esmDirnamePlugin],
+  }
+}
+
+export const defaultBundleConfigNode: Partial<BundleConfig> = {
+  typeDeclarations: true,
+  tsConfigPath: 'tsconfig.json',
+  esBuildOptions: {
+      platform: 'node',
+      plugins: [esmDirnamePlugin, makeAllPackagesExternalPlugin],
+  }
+}
+
+/** configures esbuild to build one file for a browser environment; defaults: defaultBundleConfigBrowser  */
+export const buildForBrowser = async (config: BundleConfig) =>
+  genericBuild({
+    ...defaultBundleConfigBrowser,
+    ...config,
+    esBuildOptions: {
+      ...defaultBundleConfigBrowser.esBuildOptions,
       ...(config.esBuildOptions || {}),
     },
   })
 
-/** configures esbuild to build one file for a Node.js environment */
+/** configures esbuild to build one file for a Node.js environment; defaults: defaultBundleConfigNode */
 export const buildForNode = async (config: BundleConfig) =>
   genericBuild({
-    ...defaultBundleConfig,
+    ...defaultBundleConfigNode,
     ...config,
     esBuildOptions: {
-      platform: 'node',
-      plugins: [esmDirnamePlugin, makeAllPackagesExternalPlugin],
+      ...defaultBundleConfigNode.esBuildOptions,
       ...(config.esBuildOptions || {}),
     },
   })
