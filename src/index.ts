@@ -1,4 +1,3 @@
-import * as colors from 'kleur/colors'
 import { build, BuildOptions, Loader, Plugin } from 'esbuild'
 import { extname, dirname, sep } from 'path'
 import { readFile } from 'fs/promises'
@@ -8,9 +7,8 @@ import { gzipSize } from 'gzip-size'
 import brotliSizeModule from 'brotli-size'
 import prettyBytes from 'pretty-bytes'
 import fastGlob from 'fast-glob'
-import pkg from 'typescript'
 import { writeFileSync } from 'fs'
-const { createProgram, formatDiagnostics, sys, readConfigFile, parseJsonConfigFileContent } = pkg
+import { generateDtsBundle, LibrariesOptions, OutputOptions } from 'dts-bundle-generator'
 
 /** output formats to generate */
 export const outputFormats: Array<BuildOptions['format']> = ['iife', 'esm', 'cjs']
@@ -101,52 +99,16 @@ export const getOutfileName = (fileName: string, subType: BuildOptions['format']
   return `${fileNameParsed.dir}${sep}${fileNameParsed.name}.${subType}${fileNameParsed.ext}`
 }
 
-/** generates TypeScript declarations */
-export const generateTypeDeclarations = (entryPointFile: string, tsConfigPath: string) => {
-  const configFile = readConfigFile(tsConfigPath, sys.readFile)
-  const compilerOptions = parseJsonConfigFileContent(configFile.config, sys, dirname(tsConfigPath)).options
-
-  const program = createProgram([entryPointFile], {
-    ...compilerOptions,
-    declaration: true,
-    emitDeclarationOnly: true,
-    skipLibCheck: true,
-  })
-
-  const declarations = []
-
-  // Emit the d.ts file
-  const emitResult = program.emit(undefined, (fileName, data) => {
-    data = data
-      .split('\n')
-      // filter shebang #!/...
-      .filter((line) => !line.startsWith('#'))
-      .join('\n')
-    // collect
-    declarations.push(`// ${fileName}\n\n${data}`)
-  })
-
-  // type declaration generation failed
-  if (emitResult.emitSkipped) {
-    const formattedDiagnostics = formatDiagnostics(emitResult.diagnostics, {
-      getCurrentDirectory: () => sys.getCurrentDirectory(),
-      getCanonicalFileName: (f) => f,
-      getNewLine: () => '\n',
-    })
-    console.error(colors.red(formattedDiagnostics))
-    process.exit(1)
-  }
-  return declarations.join('\n\n')
-}
-
 /** calls esbuild with a dynamic configuration per format */
 export const genericBuild = async ({
   entryPoint,
   outfile,
   esBuildOptions,
   debug,
-  typeDeclarations,
+  dts,
   tsConfigPath,
+  dtsLibOptions,
+  dtsOutputOptions,
 }: BundleConfig) => {
   if (debug) {
     // override minification parameters
@@ -163,7 +125,6 @@ export const genericBuild = async ({
   await Promise.all(
     outputFormats.map(async (format: BuildOptions['format']) => {
       await build({
-        ...baseConfig,
         format,
         entryPoints: [entryPoint],
         outfile: getOutfileName(outfile, format),
@@ -172,23 +133,29 @@ export const genericBuild = async ({
     }),
   )
 
-  if (typeDeclarations) {
-    const dTs = generateTypeDeclarations(entryPoint, tsConfigPath)
+  if (dts) {
+    const dTsBundles = generateDtsBundle(
+      [
+        {
+          filePath: entryPoint,
+          libraries: dtsLibOptions,
+          output: dtsOutputOptions,
+        },
+      ],
+      { preferredConfigPath: tsConfigPath },
+    )
 
     for (let i = 0; i < outputFormats.length; i++) {
       const format = outputFormats[i]
       const outFileNameParsed = parse(getOutfileName(outfile, format))
       const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
-      writeFileSync(declarationOutFile, dTs, { encoding: 'utf-8' })
+      writeFileSync(declarationOutFile, dTsBundles[0], { encoding: 'utf-8' })
     }
   }
   printFileSizes(outfile)
 }
 
 export interface BundleConfig {
-  /** a folder to remove with all contents before the build starts. e.g. ./dist */
-  cleanDir?: string
-
   /** shall the output not be minified and treeShaked but left readable?  default: false */
   debug?: boolean
 
@@ -199,7 +166,13 @@ export interface BundleConfig {
   outfile: string
 
   /** shall the output include .d.ts type declarations? (takes much longer to compile); default: true */
-  typeDeclarations?: boolean
+  dts?: boolean
+
+  /** allows to inline types of libraries etc. */
+  dtsLibOptions?: LibrariesOptions
+
+  /** allows to control .d.ts. bundle specifics */
+  dtsOutputOptions?: OutputOptions
 
   /** path to a tsconfig.json file, if existing; default: 'tsconfig.json' */
   tsConfigPath?: string
@@ -208,22 +181,34 @@ export interface BundleConfig {
   esBuildOptions?: BuildOptions
 }
 
-export const defaultBundleConfigBrowser: Partial<BundleConfig> = {
-  typeDeclarations: true,
+export const genericDefaultBundleConifg: Partial<BundleConfig> = {
+  dts: true,
   tsConfigPath: 'tsconfig.json',
+  dtsOutputOptions: {
+    exportReferencedTypes: true,
+    inlineDeclareExternals: true,
+    inlineDeclareGlobals: true,
+    noBanner: true,
+    sortNodes: true,
+  },
+}
+
+export const defaultBundleConfigBrowser: Partial<BundleConfig> = {
+  ...genericDefaultBundleConifg,
   esBuildOptions: {
-      platform: 'browser',
-      plugins: [esmDirnamePlugin],
-  }
+    ...baseConfig,
+    platform: 'browser',
+    plugins: [esmDirnamePlugin],
+  },
 }
 
 export const defaultBundleConfigNode: Partial<BundleConfig> = {
-  typeDeclarations: true,
-  tsConfigPath: 'tsconfig.json',
+  ...genericDefaultBundleConifg,
   esBuildOptions: {
-      platform: 'node',
-      plugins: [esmDirnamePlugin, makeAllPackagesExternalPlugin],
-  }
+    ...baseConfig,
+    platform: 'node',
+    plugins: [esmDirnamePlugin, makeAllPackagesExternalPlugin],
+  },
 }
 
 /** configures esbuild to build one file for a browser environment; defaults: defaultBundleConfigBrowser  */
@@ -231,6 +216,10 @@ export const buildForBrowser = async (config: BundleConfig) =>
   genericBuild({
     ...defaultBundleConfigBrowser,
     ...config,
+    dtsOutputOptions: {
+      ...defaultBundleConfigBrowser.dtsOutputOptions,
+      ...(config.dtsOutputOptions || {}),
+    },
     esBuildOptions: {
       ...defaultBundleConfigBrowser.esBuildOptions,
       ...(config.esBuildOptions || {}),
@@ -242,6 +231,10 @@ export const buildForNode = async (config: BundleConfig) =>
   genericBuild({
     ...defaultBundleConfigNode,
     ...config,
+    dtsOutputOptions: {
+      ...defaultBundleConfigNode.dtsOutputOptions,
+      ...(config.dtsOutputOptions || {}),
+    },
     esBuildOptions: {
       ...defaultBundleConfigNode.esBuildOptions,
       ...(config.esBuildOptions || {}),

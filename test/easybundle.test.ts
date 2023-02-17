@@ -6,8 +6,6 @@ import {
   getSizeInfo,
   formatSize,
   getPadLeft,
-  generateTypeDeclarations,
-  genericBuild,
 } from '../dist/index.esm'
 
 jest.mock('fs/promises', () => ({
@@ -127,14 +125,6 @@ describe('baseConfig', () => {
       minifyWhitespace: true,
       legalComments: 'none',
     })
-  })
-})
-
-describe('generateTypeDeclarations', () => {
-  test('should generate type declarations for entrypoint file', async () => {
-    const entryPointFile = './src/index.ts'
-    const dTs: string = generateTypeDeclarations(entryPointFile, 'tsconfig.json')
-    expect(dTs).toContain("import { BuildOptions, Plugin } from 'esbuild';")
   })
 })
 
