@@ -1,8 +1,10 @@
 import { build } from 'esbuild'
+import { debugBuildOptions } from './src/index.js'
 
 await build({
   entryPoints: ['./src/index.ts'],
   outdir: 'dist',
+  ...(process.argv.indexOf('--dev') > -1 ? debugBuildOptions : {}),
 })
 
 const easybundle = await import('./dist/index.js')

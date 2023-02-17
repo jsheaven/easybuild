@@ -99,6 +99,14 @@ export const getOutfileName = (fileName: string, subType: BuildOptions['format']
   return `${fileNameParsed.dir}${sep}${fileNameParsed.name}.${subType}${fileNameParsed.ext}`
 }
 
+/** options applied, when debug is enabled */
+export const debugBuildOptions: Partial<BuildOptions> = {
+  minify: false,
+  minifySyntax: false,
+  minifyIdentifiers: false,
+  minifyWhitespace: false,
+}
+
 /** calls esbuild with a dynamic configuration per format */
 export const genericBuild = async ({
   entryPoint,
@@ -114,12 +122,25 @@ export const genericBuild = async ({
     // override minification parameters
     // but let the user still influence them
     esBuildOptions = {
-      minify: false,
-      minifySyntax: false,
-      minifyIdentifiers: false,
-      minifyWhitespace: false,
       ...esBuildOptions,
+      ...debugBuildOptions,
     } as BuildOptions
+
+    console.log(
+      '[DEBUG] config',
+      {
+        entryPoint,
+        outfile,
+        esBuildOptions,
+        debug,
+        dts,
+        tsConfigPath,
+        dtsLibOptions,
+        dtsOutputOptions,
+      },
+      'esbuild plugins',
+      esBuildOptions.plugins,
+    )
   }
 
   await Promise.all(
