@@ -34,6 +34,8 @@ For browsers:
 
 > You need at least version 18 of [Node.js](https://www.nodejs.org) installed.
 
+<img src="output.png" height="400px" />
+
 <h2 align="center">Example usage (API, as a library)</h2>
 
 <h3 align="center">Setup</h2>
