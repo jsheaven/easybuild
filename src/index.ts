@@ -124,7 +124,7 @@ export const genericBuild = async ({
   dtsLibOptions,
   dtsOutputOptions,
 }: BundleConfig) => {
-  time('BUNDLE IN')
+  time('BUNDLED IN')
 
   if (isDebug) {
     // override minification parameters
@@ -199,7 +199,7 @@ export const genericBuild = async ({
   }
   await printFileSizes(outfile)
 
-  timeEnd('BUNDLE IN')
+  timeEnd('BUNDLED IN')
 }
 
 export interface BundleConfig {
