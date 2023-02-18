@@ -1,7 +1,7 @@
 {
   "name": "@jsheaven/easybuild",
   "type": "module",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "publishConfig": {
     "access": "public"
   },
@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "brotli-size": "^4.0.0",
+    "@jsheaven/status-message": "^1.1.0",
     "dts-bundle-generator": "^7.2.0",
     "esbuild": "^0.17.6",
     "fast-glob": "^3.2.12",

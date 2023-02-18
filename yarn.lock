@@ -671,6 +671,13 @@
     "@jridgewell/resolve-uri" "3.1.0"
     "@jridgewell/sourcemap-codec" "1.4.14"
 
+"@jsheaven/status-message@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@jsheaven/status-message/-/status-message-1.1.0.tgz#ddd653f0ccce37e11cf831f2c78424bc215ebaf7"
+  integrity sha512-FV+NA80mE4QXHxrMgCdQYOHm3gYZsk9Tr4rq/YQ6K/BgRa9htG1MsYO18Tmf2dTz99kOkiXk/upyt96N8RXYEw==
+  dependencies:
+    kleur "^4.1.5"
+
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz"

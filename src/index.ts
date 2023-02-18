@@ -1,3 +1,4 @@
+import * as colors from 'kleur/colors'
 import { build, BuildOptions, Loader, Plugin } from 'esbuild'
 import { extname, dirname, sep } from 'path'
 import { readFile } from 'fs/promises'
@@ -9,6 +10,7 @@ import prettyBytes from 'pretty-bytes'
 import fastGlob from 'fast-glob'
 import { writeFileSync } from 'fs'
 import { generateDtsBundle, LibrariesOptions, OutputOptions } from 'dts-bundle-generator'
+import { debug, info, log, time, timeEnd } from '@jsheaven/status-message'
 
 /** output formats to generate */
 export const outputFormats: Array<BuildOptions['format']> = ['iife', 'esm', 'cjs']
@@ -85,7 +87,8 @@ export const baseConfig: BuildOptions = {
 /** prints all file sizes for the generated JS files */
 const printFileSizes = async (outfile: string) => {
   const outfileParsed = parse(outfile)
-  const jsFiles = await fastGlob(`${outfileParsed.dir}${sep}${outfileParsed.name}*js`)
+  log('DONE', 'Generated in', outfileParsed.dir, ':')
+  const jsFiles = await fastGlob(`${outfileParsed.dir}${sep}${outfileParsed.name}*{js,map,d.ts}`)
 
   for (let i = 0; i < jsFiles.length; i++) {
     const jsFilePath = jsFiles[i]
@@ -114,13 +117,15 @@ export const genericBuild = async ({
   entryPoint,
   outfile,
   esBuildOptions,
-  debug,
+  debug: isDebug,
   dts,
   tsConfigPath,
   dtsLibOptions,
   dtsOutputOptions,
 }: BundleConfig) => {
-  if (debug) {
+  time('BUNDLE IN')
+
+  if (isDebug) {
     // override minification parameters
     // but let the user still influence them
     esBuildOptions = {
@@ -128,13 +133,14 @@ export const genericBuild = async ({
       ...debugBuildOptions,
     } as BuildOptions
 
-    console.log(
-      '[DEBUG] config',
+    debug(
+      'CONFIG',
+      'easybundle',
       {
         entryPoint,
         outfile,
         esBuildOptions,
-        debug,
+        debug: isDebug,
         dts,
         tsConfigPath,
         dtsLibOptions,
@@ -144,6 +150,9 @@ export const genericBuild = async ({
       esBuildOptions.plugins,
     )
   }
+
+  time('BUILT IN')
+  info('BUILD', 'Transpiling', entryPoint, '...')
 
   await Promise.all(
     outputFormats.map(async (format: BuildOptions['format']) =>
@@ -155,8 +164,11 @@ export const genericBuild = async ({
       } as BuildOptions),
     ),
   )
+  timeEnd('BUILT IN')
 
   if (dts) {
+    time('DTS IN')
+    info('DTS', 'Generating .d.ts files...')
     const dTsBundles = generateDtsBundle(
       [
         {
@@ -174,8 +186,11 @@ export const genericBuild = async ({
       const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
       writeFileSync(declarationOutFile, dTsBundles[0], { encoding: 'utf-8' })
     }
+    timeEnd('DTS IN')
   }
   await printFileSizes(outfile)
+
+  timeEnd('BUNDLE IN')
 }
 
 export interface BundleConfig {

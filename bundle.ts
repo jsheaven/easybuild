@@ -1,7 +1,7 @@
 import { build } from 'esbuild'
 import { debugBuildOptions } from './src/index.js'
 
-console.log('Bundling the bundler...')
+console.log('Building easybundle...')
 
 await build({
   entryPoints: ['./src/index.ts'],
@@ -10,8 +10,6 @@ await build({
 })
 
 const easybundle = await import('./dist/index.js')
-
-console.log('Bundling the CLI...')
 
 // build the CLI
 await easybundle.buildForNode({
@@ -23,13 +21,9 @@ await easybundle.buildForNode({
   },
 } as any)
 
-console.log('Bundling the API...')
-
 // built the API
 await easybundle.buildForNode({
   entryPoint: './src/index.ts',
   outfile: './dist/index.js',
   debug: process.argv.indexOf('--dev') > -1,
 } as any)
-
-console.log('Done.')
