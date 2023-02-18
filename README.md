@@ -17,7 +17,7 @@
 - ✅ Generates `cjs`, `esm` and `iife` invariants automatically
 - ✅ Full support for `.d.ts` bundling and type checking
 - ✅ Prints the file sizes per compression type `gzip` and `brotli`, when done
-- ✅ Just `1514b` nano sized (ESM, gizpped)
+- ✅ Just `1849b` nano sized (ESM, gizpped)
 - ✅ Available as CLI and API
 - ✅ Fixes several unintuitive `esbuild` default behaviours
 - ✅ Runs on Windows, Mac, Linux, CI tested

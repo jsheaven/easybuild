@@ -671,10 +671,10 @@
     "@jridgewell/resolve-uri" "3.1.0"
     "@jridgewell/sourcemap-codec" "1.4.14"
 
-"@jsheaven/status-message@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@jsheaven/status-message/-/status-message-1.1.0.tgz#ddd653f0ccce37e11cf831f2c78424bc215ebaf7"
-  integrity sha512-FV+NA80mE4QXHxrMgCdQYOHm3gYZsk9Tr4rq/YQ6K/BgRa9htG1MsYO18Tmf2dTz99kOkiXk/upyt96N8RXYEw==
+"@jsheaven/status-message@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@jsheaven/status-message/-/status-message-1.1.1.tgz#7dd103f9562c9049818e4007ac99e79269f3a4ee"
+  integrity sha512-2+quW/URm6pD2oh5MPdUz89aFe6p3qGdgiP9EtXdrP0TBi8o6NNIxGUwFzckkAz8Nvdv9gT32QQ+YRwuBVpWbQ==
   dependencies:
     kleur "^4.1.5"
 

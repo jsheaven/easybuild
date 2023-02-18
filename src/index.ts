@@ -1,4 +1,3 @@
-import * as colors from 'kleur/colors'
 import { build, BuildOptions, Loader, Plugin } from 'esbuild'
 import { extname, dirname, sep } from 'path'
 import { readFile } from 'fs/promises'
@@ -10,7 +9,7 @@ import prettyBytes from 'pretty-bytes'
 import fastGlob from 'fast-glob'
 import { writeFileSync } from 'fs'
 import { generateDtsBundle, LibrariesOptions, OutputOptions } from 'dts-bundle-generator'
-import { debug, info, log, time, timeEnd } from '@jsheaven/status-message'
+import { debug, error, info, log, time, timeEnd, warn } from '@jsheaven/status-message'
 
 /** output formats to generate */
 export const outputFormats: Array<BuildOptions['format']> = ['iife', 'esm', 'cjs']
@@ -87,14 +86,16 @@ export const baseConfig: BuildOptions = {
 /** prints all file sizes for the generated JS files */
 const printFileSizes = async (outfile: string) => {
   const outfileParsed = parse(outfile)
-  log('DONE', 'Generated in', outfileParsed.dir, ':')
-  const jsFiles = await fastGlob(`${outfileParsed.dir}${sep}${outfileParsed.name}*{js,map,d.ts}`)
+  log('OK', 'Find your bundle in', outfileParsed.dir)
+  const file = await fastGlob(`${outfileParsed.dir}${sep}${outfileParsed.name}*{js,map,d.ts}`)
 
-  for (let i = 0; i < jsFiles.length; i++) {
-    const jsFilePath = jsFiles[i]
-    const code = await readFile(jsFilePath, { encoding: 'utf8' })
-    console.log(await getSizeInfo(code, jsFilePath, false))
-    console.log(formatSize(Buffer.from(code).byteLength, jsFilePath))
+  for (let i = 0; i < file.length; i++) {
+    const filePath = file[i]
+    const code = await readFile(filePath, { encoding: 'utf8' })
+    if (filePath.endsWith('.js')) {
+      console.log(await getSizeInfo(code, filePath, false))
+    }
+    console.log(formatSize(Buffer.from(code).byteLength, filePath))
   }
 }
 
@@ -169,22 +170,30 @@ export const genericBuild = async ({
   if (dts) {
     time('DTS IN')
     info('DTS', 'Generating .d.ts files...')
-    const dTsBundles = generateDtsBundle(
-      [
-        {
-          filePath: entryPoint,
-          libraries: dtsLibOptions,
-          output: dtsOutputOptions,
-        },
-      ],
-      { preferredConfigPath: tsConfigPath },
-    )
+    try {
+      const dTsBundles = generateDtsBundle(
+        [
+          {
+            filePath: entryPoint,
+            libraries: dtsLibOptions,
+            output: dtsOutputOptions,
+          },
+        ],
+        { preferredConfigPath: tsConfigPath },
+      )
 
-    for (let i = 0; i < outputFormats.length; i++) {
-      const format = outputFormats[i]
-      const outFileNameParsed = parse(getOutfileName(outfile, format))
-      const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
-      writeFileSync(declarationOutFile, dTsBundles[0], { encoding: 'utf-8' })
+      for (let i = 0; i < outputFormats.length; i++) {
+        const format = outputFormats[i]
+        const outFileNameParsed = parse(getOutfileName(outfile, format))
+        const declarationOutFile = `${outFileNameParsed.dir}${sep}${outFileNameParsed.name}.d.ts`
+        writeFileSync(declarationOutFile, dTsBundles[0], { encoding: 'utf-8' })
+      }
+    } catch (e) {
+      if (/Symbol for root source file (.*) not found/.test(e.toString())) {
+        warn('DTS', 'No type exports found. Skipping.')
+      } else {
+        error('DTS', 'Error while generating .d.ts files: ', e)
+      }
     }
     timeEnd('DTS IN')
   }

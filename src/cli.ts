@@ -20,5 +20,3 @@ if (platform === 'browser') {
     }),
   )
 }
-
-export type { getPadLeft } from './index'
