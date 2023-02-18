@@ -86,11 +86,13 @@ export const baseConfig: BuildOptions = {
 const printFileSizes = async (outfile: string) => {
   const outfileParsed = parse(outfile)
   const jsFiles = await fastGlob(`${outfileParsed.dir}${sep}${outfileParsed.name}*js`)
-  jsFiles.forEach(async (jsFilePath) => {
+
+  for (let i = 0; i < jsFiles.length; i++) {
+    const jsFilePath = jsFiles[i]
     const code = await readFile(jsFilePath, { encoding: 'utf8' })
     console.log(await getSizeInfo(code, jsFilePath, false))
     console.log(formatSize(Buffer.from(code).byteLength, jsFilePath))
-  })
+  }
 }
 
 /** rewrites the outfile name from e.g. ./dist/index.js to ./dist/index.esm.js, ./dist/index.iife.js */
@@ -144,14 +146,14 @@ export const genericBuild = async ({
   }
 
   await Promise.all(
-    outputFormats.map(async (format: BuildOptions['format']) => {
-      await build({
+    outputFormats.map(async (format: BuildOptions['format']) =>
+      build({
         format,
         entryPoints: [entryPoint],
         outfile: getOutfileName(outfile, format),
         ...(esBuildOptions || {}),
-      } as BuildOptions)
-    }),
+      } as BuildOptions),
+    ),
   )
 
   if (dts) {
@@ -173,7 +175,7 @@ export const genericBuild = async ({
       writeFileSync(declarationOutFile, dTsBundles[0], { encoding: 'utf-8' })
     }
   }
-  printFileSizes(outfile)
+  await printFileSizes(outfile)
 }
 
 export interface BundleConfig {
