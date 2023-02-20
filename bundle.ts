@@ -1,8 +1,6 @@
 import { build } from 'esbuild'
 import { debugBuildOptions } from './src/index.js'
 
-console.log('Building easybundle...')
-
 await build({
   entryPoints: ['./src/index.ts'],
   outdir: 'dist',

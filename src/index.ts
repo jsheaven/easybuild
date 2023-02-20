@@ -11,9 +11,6 @@ import { writeFileSync } from 'fs'
 import { generateDtsBundle, LibrariesOptions, OutputOptions } from 'dts-bundle-generator'
 import { debug, error, info, log, time, timeEnd, warn } from '@jsheaven/status-message'
 
-/** output formats to generate */
-export const outputFormats: Array<BuildOptions['format']> = ['iife', 'esm', 'cjs']
-
 /** adds spaces from left so that all lines are visually in line vertically */
 export const getPadLeft = (str: string, width: number, char = ' ') => char.repeat(width - str.length)
 
@@ -115,6 +112,7 @@ export const debugBuildOptions: Partial<BuildOptions> = {
 
 /** calls esbuild with a dynamic configuration per format */
 export const genericBuild = async ({
+  outputFormats,
   entryPoint,
   outfile,
   esBuildOptions,
@@ -203,6 +201,9 @@ export const genericBuild = async ({
 }
 
 export interface BundleConfig {
+  /** allows to customize the output formats that esbuild would generate. default: ['iife', 'esm', 'cjs'] */
+  outputFormats?: Array<BuildOptions['format']>
+
   /** shall the output not be minified and treeShaked but left readable?  default: false */
   debug?: boolean
 
@@ -229,6 +230,7 @@ export interface BundleConfig {
 }
 
 export const genericDefaultBundleConifg: Partial<BundleConfig> = {
+  outputFormats: ['iife', 'esm', 'cjs'],
   dts: true,
   tsConfigPath: 'tsconfig.json',
   dtsOutputOptions: {
